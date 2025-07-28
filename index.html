@@ -82,13 +82,23 @@
             margin-bottom: 16px;
         }
         
-        .video-container iframe {
+        .video-container iframe,
+        .video-container .youtube-player {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             border-radius: 8px;
+        }
+        
+        .youtube-player {
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
         }
         
         .current-time {
@@ -265,17 +275,35 @@
             <div class="card">
                 <h2 class="card-title">🎥 Відео</h2>
                 <div class="video-container">
-                    <iframe 
-                        id="youtube-frame"
-                        src="https://www.youtube.com/embed/Tnp-XWElTMU?enablejsapi=1&origin=*"
-                        frameborder="0" 
-                        allowfullscreen>
-                    </iframe>
+                    <div id="youtube-frame" class="youtube-player"></div>
                 </div>
                 <div class="current-time">
                     ⏰ Поточний час: <span class="time-value" id="current-time">0:00</span>
                 </div>
             </div>
+
+            <!-- Статистика -->
+            <div class="card">
+                <h2 class="card-title">📊 Ключові моменти</h2>
+                <div class="stats-grid">
+                    <div class="stat-item stat-start">
+                        <div class="stat-title">🚀 Початок відео</div>
+                        <div class="stat-time">0:00 - 0:58</div>
+                        <div class="stat-value">99.5% увага</div>
+                    </div>
+                    <div class="stat-item stat-middle">
+                        <div class="stat-title">⚡ Середина відео</div>
+                        <div class="stat-time">3:52 - 5:48</div>
+                        <div class="stat-value">30.3% увага</div>
+                    </div>
+                    <div class="stat-item stat-end">
+                        <div class="stat-title">🏁 Кінець відео</div>
+                        <div class="stat-time">8:42 - 9:40</div>
+                        <div class="stat-value">20.9% увага</div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <!-- Графік -->
         <div class="chart-container">
@@ -384,9 +412,184 @@
             svg.appendChild(currentLine);
         }
 
-        // Перехід до конкретного часу у відео
+        let youtubePlayer = null;
+        let isPlayerReady = false;
+
+        // Ініціалізація YouTube API
+        function initYouTubeAPI() {
+            // Встановлюємо таймаут для fallback
+            const fallbackTimeout = setTimeout(() => {
+                console.log('YouTube API завантажується довго, використовуємо iframe fallback');
+                createIframeFallback();
+            }, 5000);
+
+            // Завантажуємо YouTube IFrame API
+            if (!window.YT) {
+                const tag = document.createElement('script');
+                tag.src = 'https://www.youtube.com/iframe_api';
+                tag.onerror = () => {
+                    clearTimeout(fallbackTimeout);
+                    console.log('Помилка завантаження YouTube API');
+                    createIframeFallback();
+                };
+                
+                const firstScriptTag = document.getElementsByTagName('script')[0];
+                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                
+                window.onYouTubeIframeAPIReady = () => {
+                    clearTimeout(fallbackTimeout);
+                    createYouTubePlayer();
+                };
+            } else {
+                clearTimeout(fallbackTimeout);
+                createYouTubePlayer();
+            }
+        }
+
+        // Створення YouTube плеєра
+        function createYouTubePlayer() {
+            const playerDiv = document.getElementById('youtube-frame');
+            if (!playerDiv) return;
+
+            try {
+                youtubePlayer = new YT.Player('youtube-frame', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: 'Tnp-XWElTMU',
+                    playerVars: {
+                        'enablejsapi': 1,
+                        'origin': window.location.origin,
+                        'playsinline': 1,
+                        'controls': 1,
+                        'rel': 0,
+                        'modestbranding': 1
+                    },
+                    events: {
+                        'onReady': onPlayerReady,
+                        'onStateChange': onPlayerStateChange,
+                        'onError': onPlayerError
+                    }
+                });
+            } catch (error) {
+                console.log('YouTube API помилка, використовуємо iframe fallback:', error);
+                createIframeFallback();
+            }
+        }
+
+        // Fallback: створення звичайного iframe
+        function createIframeFallback() {
+            const playerDiv = document.getElementById('youtube-frame');
+            if (!playerDiv) return;
+
+            playerDiv.innerHTML = `
+                <iframe 
+                    id="youtube-iframe"
+                    src="https://www.youtube.com/embed/Tnp-XWElTMU?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}"
+                    frameborder="0" 
+                    allowfullscreen
+                    style="width: 100%; height: 100%; border-radius: 8px;">
+                </iframe>
+            `;
+            
+            setupPostMessageAPI();
+        }
+
+        // Обробка помилок YouTube плеєра
+        function onPlayerError(event) {
+            console.log('YouTube Player Error:', event.data);
+            createIframeFallback();
+        }
+
+        // Коли плеєр готовий
+        function onPlayerReady(event) {
+            isPlayerReady = true;
+            document.getElementById('status').textContent = '💡 Клікайте по графіку для переходу до моменту відео (YouTube готовий)';
+            
+            // Запускаємо оновлення часу
+            setInterval(() => {
+                if (youtubePlayer && youtubePlayer.getCurrentTime) {
+                    try {
+                        const currentTime = youtubePlayer.getCurrentTime();
+                        if (currentTime > 0) {
+                            updateCurrentTime(currentTime);
+                        }
+                    } catch (e) {
+                        // Ігноруємо помилки
+                    }
+                }
+            }, 500);
+        }
+
+        // Коли стан плеєра міняється
+        function onPlayerStateChange(event) {
+            // Можна додати логіку для різних станів відтворення
+        }
+
+        // Запасний метод через postMessage (якщо YouTube API не працює)
+        function setupPostMessageAPI() {
+            document.getElementById('status').textContent = '💡 Клікайте по графіку для переходу до моменту відео (iframe режим)';
+            
+            // Спроба отримувати час через postMessage
+            window.addEventListener('message', function(event) {
+                if (event.origin !== 'https://www.youtube.com') return;
+                
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.event === 'video-progress' && data.info && data.info.currentTime) {
+                        updateCurrentTime(data.info.currentTime);
+                    }
+                } catch (e) {
+                    // Ігноруємо помилки парсингу
+                }
+            });
+        }
+
+        // Перехід до конкретного часу у відео (ПОКРАЩЕНА ВЕРСІЯ)
         function seekToTime(seconds) {
             updateCurrentTime(seconds);
+            
+            // Метод 1: Спроба через YouTube API
+            if (youtubePlayer && youtubePlayer.seekTo && isPlayerReady) {
+                try {
+                    youtubePlayer.seekTo(seconds, true);
+                    console.log(`✅ Перехід до ${formatTime(seconds)} через YouTube API`);
+                    return;
+                } catch (error) {
+                    console.log('YouTube API помилка:', error);
+                }
+            }
+            
+            // Метод 2: Спроба через postMessage до iframe
+            const iframe = document.getElementById('youtube-iframe');
+            if (iframe && iframe.contentWindow) {
+                try {
+                    const message = JSON.stringify({
+                        event: 'command',
+                        func: 'seekTo',
+                        args: [seconds, true]
+                    });
+                    iframe.contentWindow.postMessage(message, 'https://www.youtube.com');
+                    console.log(`🔄 Спроба переходу до ${formatTime(seconds)} через postMessage`);
+                    return;
+                } catch (error) {
+                    console.log('PostMessage помилка:', error);
+                }
+            }
+            
+            // Метод 3: Оновлення URL iframe (гарантований метод)
+            if (iframe) {
+                const newSrc = `https://www.youtube.com/embed/Tnp-XWElTMU?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}&start=${Math.floor(seconds)}&autoplay=1`;
+                iframe.src = newSrc;
+                console.log(`🔄 Перезавантаження відео з часу ${formatTime(seconds)}`);
+                
+                // Показуємо повідомлення користувачу
+                const status = document.getElementById('status');
+                const originalText = status.textContent;
+                status.textContent = `⏩ Перехід до ${formatTime(seconds)}...`;
+                setTimeout(() => {
+                    status.textContent = originalText;
+                }, 2000);
+            }
         }
 
         // Показати tooltip
@@ -530,7 +733,11 @@
             setTimeout(() => {
                 try {
                     createChart();
-                    document.getElementById('status').textContent = '💡 Клікайте по графіку для переходу до моменту відео';
+                    document.getElementById('status').textContent = '🎥 Підключення до YouTube API...';
+                    
+                    // Ініціалізуємо YouTube API
+                    initYouTubeAPI();
+                    
                 } catch (error) {
                     console.error('Error creating chart:', error);
                     document.getElementById('status').textContent = '⚠️ Помилка створення графіка';
