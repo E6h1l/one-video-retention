@@ -4,14 +4,488 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Аналіз Збереження Уваги YouTube</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/recharts@2.8.0/umd/Recharts.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Додаткові стилі для кращого відображення */
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f8fafc;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="text/babel" src="app.js"></script>
+    <div id="root">
+        <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
+            <div class="loading-spinner"></div>
+            <p style="color: #666; margin-top: 20px;">Завантаження...</p>
+        </div>
+    </div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } = Recharts;
+
+        // Ваші повні дані збереження уваги
+        const audienceData = [
+            {position: 0, retention: 99.5},
+            {position: 1, retention: 89.34},
+            {position: 2, retention: 82.27},
+            {position: 3, retention: 76.36},
+            {position: 4, retention: 72},
+            {position: 5, retention: 69.02},
+            {position: 6, retention: 67.46},
+            {position: 7, retention: 64.86},
+            {position: 8, retention: 63.48},
+            {position: 9, retention: 63.03},
+            {position: 10, retention: 61.91},
+            {position: 11, retention: 59.73},
+            {position: 12, retention: 58.15},
+            {position: 13, retention: 57.12},
+            {position: 14, retention: 55.04},
+            {position: 15, retention: 54.02},
+            {position: 16, retention: 52.95},
+            {position: 17, retention: 51.24},
+            {position: 18, retention: 47.9},
+            {position: 19, retention: 45.89},
+            {position: 20, retention: 44.29},
+            {position: 21, retention: 43.51},
+            {position: 22, retention: 42.74},
+            {position: 23, retention: 42.22},
+            {position: 24, retention: 41.67},
+            {position: 25, retention: 40.42},
+            {position: 26, retention: 39.65},
+            {position: 27, retention: 38.98},
+            {position: 28, retention: 38.03},
+            {position: 29, retention: 36.79},
+            {position: 30, retention: 35.76},
+            {position: 31, retention: 35.22},
+            {position: 32, retention: 34.82},
+            {position: 33, retention: 34.66},
+            {position: 34, retention: 34.08},
+            {position: 35, retention: 33.69},
+            {position: 36, retention: 33.33},
+            {position: 37, retention: 33.59},
+            {position: 38, retention: 33.73},
+            {position: 39, retention: 31.87},
+            {position: 40, retention: 31.58},
+            {position: 41, retention: 31.48},
+            {position: 42, retention: 31.21},
+            {position: 43, retention: 31.11},
+            {position: 44, retention: 30.9},
+            {position: 45, retention: 30.51},
+            {position: 46, retention: 30.2},
+            {position: 47, retention: 30.18},
+            {position: 48, retention: 30.1},
+            {position: 49, retention: 30.09},
+            {position: 50, retention: 29.87},
+            {position: 51, retention: 29.47},
+            {position: 52, retention: 29.07},
+            {position: 53, retention: 28.94},
+            {position: 54, retention: 28.77},
+            {position: 55, retention: 28.57},
+            {position: 56, retention: 28.44},
+            {position: 57, retention: 28.25},
+            {position: 58, retention: 28.06},
+            {position: 59, retention: 28.03},
+            {position: 60, retention: 27.98},
+            {position: 61, retention: 27.82},
+            {position: 62, retention: 27.65},
+            {position: 63, retention: 27.38},
+            {position: 64, retention: 27.2},
+            {position: 65, retention: 26.97},
+            {position: 66, retention: 26.95},
+            {position: 67, retention: 26.74},
+            {position: 68, retention: 26.56},
+            {position: 69, retention: 28.33},
+            {position: 70, retention: 25.83},
+            {position: 71, retention: 25.58},
+            {position: 72, retention: 25.53},
+            {position: 73, retention: 25.38},
+            {position: 74, retention: 25.35},
+            {position: 75, retention: 25.16},
+            {position: 76, retention: 24.97},
+            {position: 77, retention: 24.61},
+            {position: 78, retention: 24.33},
+            {position: 79, retention: 24.14},
+            {position: 80, retention: 24},
+            {position: 81, retention: 23.93},
+            {position: 82, retention: 23.84},
+            {position: 83, retention: 23.77},
+            {position: 84, retention: 23.69},
+            {position: 85, retention: 23.61},
+            {position: 86, retention: 23.55},
+            {position: 87, retention: 23.39},
+            {position: 88, retention: 23.46},
+            {position: 89, retention: 23.43},
+            {position: 90, retention: 23.57},
+            {position: 91, retention: 23.53},
+            {position: 92, retention: 23.68},
+            {position: 93, retention: 23.62},
+            {position: 94, retention: 23.65},
+            {position: 95, retention: 23.11},
+            {position: 96, retention: 22.68},
+            {position: 97, retention: 21.79},
+            {position: 98, retention: 20.99},
+            {position: 99, retention: 20.87}
+        ];
+
+        const AudienceRetentionChart = () => {
+            const [currentTime, setCurrentTime] = useState(0);
+            const [player, setPlayer] = useState(null);
+            const [playerReady, setPlayerReady] = useState(false);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+
+            const videoDurationSeconds = 9 * 60 + 40; // 9:40
+            const videoId = 'Tnp-XWElTMU';
+
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+
+            const percentToSeconds = (percent) => {
+                return (percent / 100) * videoDurationSeconds;
+            };
+
+            const secondsToPercent = (seconds) => {
+                return (seconds / videoDurationSeconds) * 100;
+            };
+
+            // Підготовка даних
+            const data = audienceData.map(item => ({
+                ...item,
+                timeInSeconds: percentToSeconds(item.position),
+                timeLabel: formatTime(percentToSeconds(item.position))
+            }));
+
+            // YouTube API завантаження
+            useEffect(() => {
+                setLoading(false); // Показуємо інтерфейс одразу
+                
+                const loadYouTubeAPI = () => {
+                    if (window.YT && window.YT.Player) {
+                        initializePlayer();
+                        return;
+                    }
+
+                    if (document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+                        // API вже завантажується
+                        const checkYT = setInterval(() => {
+                            if (window.YT && window.YT.Player) {
+                                clearInterval(checkYT);
+                                initializePlayer();
+                            }
+                        }, 100);
+                        return;
+                    }
+
+                    const tag = document.createElement('script');
+                    tag.src = 'https://www.youtube.com/iframe_api';
+                    tag.async = true;
+                    tag.onload = () => {
+                        window.onYouTubeIframeAPIReady = initializePlayer;
+                    };
+                    tag.onerror = () => {
+                        setError('Помилка завантаження YouTube API');
+                    };
+                    
+                    const firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                };
+
+                const initializePlayer = () => {
+                    try {
+                        const ytPlayer = new window.YT.Player('youtube-player', {
+                            height: '315',
+                            width: '100%',
+                            videoId: videoId,
+                            playerVars: {
+                                'playsinline': 1,
+                                'controls': 1,
+                                'rel': 0,
+                                'modestbranding': 1,
+                                'iv_load_policy': 3
+                            },
+                            events: {
+                                'onReady': (event) => {
+                                    setPlayer(event.target);
+                                    setPlayerReady(true);
+                                    setError(null);
+                                },
+                                'onError': (event) => {
+                                    setError(`Помилка відео: ${event.data}`);
+                                },
+                                'onStateChange': (event) => {
+                                    if (event.data === window.YT.PlayerState.PLAYING) {
+                                        const updateTime = () => {
+                                            if (event.target.getPlayerState() === window.YT.PlayerState.PLAYING) {
+                                                setCurrentTime(event.target.getCurrentTime());
+                                                setTimeout(updateTime, 500);
+                                            }
+                                        };
+                                        updateTime();
+                                    }
+                                }
+                            }
+                        });
+                    } catch (err) {
+                        setError('Помилка ініціалізації відео плеєра');
+                        console.error('YouTube Player Error:', err);
+                    }
+                };
+
+                loadYouTubeAPI();
+            }, []);
+
+            const handleChartClick = (event) => {
+                if (event && event.activeLabel !== undefined && player && playerReady) {
+                    try {
+                        const position = event.activeLabel;
+                        const timeInSeconds = percentToSeconds(position);
+                        player.seekTo(timeInSeconds, true);
+                        setCurrentTime(timeInSeconds);
+                    } catch (err) {
+                        console.error('Error seeking video:', err);
+                    }
+                }
+            };
+
+            const customTooltip = ({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                    const value = payload[0].value;
+                    const timeLabel = formatTime(percentToSeconds(label));
+                    
+                    return (
+                        <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
+                            <p className="font-semibold text-gray-800">{`Час: ${timeLabel}`}</p>
+                            <p className="text-blue-600">{`Збереження уваги: ${value.toFixed(2)}%`}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                                {playerReady ? 'Клікніть, щоб перейти до цього моменту' : 'Завантаження відео...'}
+                            </p>
+                        </div>
+                    );
+                }
+                return null;
+            };
+
+            const formatXAxisLabel = (value) => {
+                return formatTime(percentToSeconds(value));
+            };
+
+            const formatYAxisLabel = (value) => {
+                return `${value}%`;
+            };
+
+            const currentPosition = secondsToPercent(currentTime);
+
+            if (loading) {
+                return (
+                    <div className="flex items-center justify-center h-screen">
+                        <div className="text-center">
+                            <div className="loading-spinner"></div>
+                            <p className="text-gray-600 mt-4">Завантаження додатку...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 bg-white min-h-screen">
+                    {/* Заголовок */}
+                    <div className="mb-6 text-center">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+                            Інтерактивний аналіз збереження уваги
+                        </h1>
+                        <p className="text-lg text-gray-600 mb-1">YouTube відео (9:40)</p>
+                        <p className="text-sm text-gray-500">
+                            💡 {playerReady ? 'Клікайте по графіку для переходу до моменту відео' : 'Завантаження YouTube відео...'}
+                        </p>
+                    </div>
+                    
+                    {/* Основний контент */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        {/* YouTube відео */}
+                        <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
+                            <h2 className="text-xl font-semibold mb-4 text-gray-800">🎥 Відео</h2>
+                            <div className="relative mb-4">
+                                <div id="youtube-player" className="w-full bg-gray-200 rounded" style={{minHeight: '200px'}}>
+                                    {!playerReady && !error && (
+                                        <div className="absolute inset-0 flex items-center justify-center rounded">
+                                            <div className="text-center">
+                                                <div className="loading-spinner"></div>
+                                                <p className="text-gray-600 mt-2">Завантаження YouTube відео...</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {error && (
+                                        <div className="absolute inset-0 flex items-center justify-center rounded bg-red-50">
+                                            <div className="text-center text-red-600 p-4">
+                                                <p className="font-semibold">⚠️ {error}</p>
+                                                <p className="text-sm mt-2">Перевірте інтернет-з'єднання</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="text-center text-lg text-gray-700 bg-white p-3 rounded">
+                                ⏰ Поточний час: <span className="font-mono font-bold text-blue-600">{formatTime(currentTime)}</span>
+                            </div>
+                        </div>
+
+                        {/* Статистика */}
+                        <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
+                            <h2 className="text-xl font-semibold mb-4 text-gray-800">📊 Ключові моменти</h2>
+                            <div className="space-y-4">
+                                <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                                    <div className="font-semibold text-blue-800 mb-1">🚀 Початок відео</div>
+                                    <div className="text-sm text-blue-600 mb-1">0:00 - 0:58</div>
+                                    <div className="text-lg font-bold text-blue-700">{data[0]?.retention.toFixed(1)}% увага</div>
+                                </div>
+                                <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-400">
+                                    <div className="font-semibold text-yellow-800 mb-1">⚡ Середина відео</div>
+                                    <div className="text-sm text-yellow-600 mb-1">3:52 - 5:48</div>
+                                    <div className="text-lg font-bold text-yellow-700">
+                                        {(data.slice(40, 60).reduce((sum, item) => sum + item.retention, 0) / 20).toFixed(1)}% увага
+                                    </div>
+                                </div>
+                                <div className="bg-red-50 p-4 rounded-lg border-l-4 border-red-400">
+                                    <div className="font-semibold text-red-800 mb-1">🏁 Кінець відео</div>
+                                    <div className="text-sm text-red-600 mb-1">8:42 - 9:40</div>
+                                    <div className="text-lg font-bold text-red-700">{data[data.length - 1]?.retention.toFixed(1)}% увага</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Графік */}
+                    <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
+                        <h2 className="text-xl font-semibold mb-4 text-gray-800 text-center">📈 Графік збереження уваги</h2>
+                        <div style={{width: '100%', height: '450px'}}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart
+                                    data={data}
+                                    margin={{
+                                        top: 20,
+                                        right: 30,
+                                        left: 60,
+                                        bottom: 60,
+                                    }}
+                                    onClick={handleChartClick}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                                    <XAxis
+                                        dataKey="position"
+                                        type="number"
+                                        scale="linear"
+                                        domain={[0, 100]}
+                                        ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]}
+                                        tickFormatter={formatXAxisLabel}
+                                        axisLine={{ stroke: '#666', strokeWidth: 1 }}
+                                        tickLine={{ stroke: '#666', strokeWidth: 1 }}
+                                        tick={{ fontSize: 12, fill: '#666' }}
+                                        label={{ 
+                                            value: 'Час відео (хв:сс)', 
+                                            position: 'insideBottom', 
+                                            offset: -10,
+                                            style: { textAnchor: 'middle', fontSize: '14px', fontWeight: 'bold' }
+                                        }}
+                                    />
+                                    <YAxis
+                                        type="number"
+                                        domain={[15, 105]}
+                                        ticks={[20, 30, 40, 50, 60, 70, 80, 90, 100]}
+                                        tickFormatter={formatYAxisLabel}
+                                        axisLine={{ stroke: '#666', strokeWidth: 1 }}
+                                        tickLine={{ stroke: '#666', strokeWidth: 1 }}
+                                        tick={{ fontSize: 12, fill: '#666' }}
+                                        label={{ 
+                                            value: 'Збереження уваги (%)', 
+                                            angle: -90, 
+                                            position: 'insideLeft',
+                                            style: { textAnchor: 'middle', fontSize: '14px', fontWeight: 'bold' }
+                                        }}
+                                    />
+                                    <Tooltip content={customTooltip} />
+                                    
+                                    {currentTime > 0 && (
+                                        <ReferenceLine 
+                                            x={currentPosition} 
+                                            stroke="#ff4444" 
+                                            strokeWidth={3}
+                                            strokeDasharray="5 5"
+                                            label={{ 
+                                                value: "▶ Поточна позиція", 
+                                                position: "top", 
+                                                fill: "#ff4444", 
+                                                fontSize: "12px", 
+                                                fontWeight: "bold" 
+                                            }}
+                                        />
+                                    )}
+                                    
+                                    <Line
+                                        type="monotone"
+                                        dataKey="retention"
+                                        stroke="#2563eb"
+                                        strokeWidth={4}
+                                        dot={{ r: 0 }}
+                                        activeDot={{
+                                            r: 8,
+                                            fill: '#1d4ed8',
+                                            stroke: '#ffffff',
+                                            strokeWidth: 3
+                                        }}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                    
+                    {/* Підказка */}
+                    <div className="mt-6 text-center text-sm text-gray-500 bg-blue-50 p-4 rounded-lg">
+                        <p className="mb-2">
+                            🎯 <strong>Інструкція:</strong> Клікніть на будь-яку точку графіка, щоб перейти до відповідного моменту у відео
+                        </p>
+                        <p>📱 Сайт адаптований для мобільних пристроїв</p>
+                    </div>
+                </div>
+            );
+        };
+
+        // Рендер додатку
+        try {
+            ReactDOM.render(React.createElement(AudienceRetentionChart), document.getElementById('root'));
+        } catch (error) {
+            console.error('Render Error:', error);
+            document.getElementById('root').innerHTML = `
+                <div style="text-align: center; padding: 50px; color: #666;">
+                    <h2>⚠️ Помилка завантаження</h2>
+                    <p>Спробуйте оновити сторінку</p> 
+                    <p style="font-size: 12px; margin-top: 20px;">Error: ${error.message}</p>
+                </div>
+            `;
+        }
+    </script>
 </body>
 </html>
