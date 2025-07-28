@@ -54,12 +54,6 @@
             margin-bottom: 30px;
         }
         
-        @media (min-width: 1024px) {
-            .grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-        
         .card {
             background: white;
             border-radius: 12px;
@@ -271,7 +265,7 @@
         </div>
         
         <div class="grid">
-            <!-- YouTube відео -->
+            <!-- YouTube відео на всю ширину -->
             <div class="card">
                 <h2 class="card-title">🎥 Відео</h2>
                 <div class="video-container">
@@ -279,28 +273,6 @@
                 </div>
                 <div class="current-time">
                     ⏰ Поточний час: <span class="time-value" id="current-time">0:00</span>
-                </div>
-            </div>
-
-            <!-- Статистика -->
-            <div class="card">
-                <h2 class="card-title">📊 Ключові моменти</h2>
-                <div class="stats-grid">
-                    <div class="stat-item stat-start">
-                        <div class="stat-title">🚀 Початок відео</div>
-                        <div class="stat-time">0:00 - 0:58</div>
-                        <div class="stat-value">99.5% увага</div>
-                    </div>
-                    <div class="stat-item stat-middle">
-                        <div class="stat-title">⚡ Середина відео</div>
-                        <div class="stat-time">3:52 - 5:48</div>
-                        <div class="stat-value">30.3% увага</div>
-                    </div>
-                    <div class="stat-item stat-end">
-                        <div class="stat-title">🏁 Кінець відео</div>
-                        <div class="stat-time">8:42 - 9:40</div>
-                        <div class="stat-value">20.9% увага</div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -317,7 +289,6 @@
         <!-- Підказка -->
         <div class="footer">
             <p>🎯 <strong>Інструкція:</strong> Клікніть на будь-яку точку графіка, щоб перейти до відповідного моменту у відео</p>
-            <p>📱 Сайт адаптований для мобільних пристроїв</p>
         </div>
     </div>
 
